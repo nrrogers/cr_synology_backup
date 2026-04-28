@@ -1,6 +1,6 @@
 ---
-- name: Verify restic is installed
-  ansible.builtin.command: restic version
+- name: Verify restic is installed at the configured path
+  ansible.builtin.command: "{{ cr_synology_backup_restic_binary }} version"
   register: _restic_version
   changed_when: false
   check_mode: false

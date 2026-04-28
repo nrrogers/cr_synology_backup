@@ -18,6 +18,13 @@ cr_synology_backup_ssh_key_path: "{{ cr_synology_backup_base_dir }}/restic_backu
 cr_synology_backup_repo_password_file: "{{ cr_synology_backup_base_dir }}/.restic-password-{{ inventory_hostname }}"
 cr_synology_backup_log_dir: "{{ cr_synology_backup_base_dir }}/logs"
 
+# --- restic binary ---
+# DSM's non-interactive shell PATH does not include /usr/local/bin where
+# SynoCommunity symlinks restic, so the wrapper and the preflight check
+# both invoke restic by absolute path. Override per-host if your install
+# is elsewhere.
+cr_synology_backup_restic_binary: /usr/local/bin/restic
+
 # --- ssh ---
 cr_synology_backup_ssh_user: svc_restic
 

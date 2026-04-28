@@ -40,7 +40,7 @@ curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
     echo "=== restic backup started $(date -Iseconds) ==="
     echo "host: $(hostname), repo: ${RESTIC_REPOSITORY}"
 
-    restic -o sftp.command="$SFTP_CMD" backup \
+    {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" backup \
 {%- for path in cr_synology_backup_paths %}
         {{ path | quote }}{% if not loop.last or (cr_synology_backup_excludes | default([]) | length > 0) %} \{% endif %}
 {%- endfor %}
@@ -50,7 +50,7 @@ curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
 
     echo "=== restic forget + prune started $(date -Iseconds) ==="
 
-    restic -o sftp.command="$SFTP_CMD" forget \
+    {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" forget \
         --keep-daily {{ cr_synology_backup_retention.keep_daily }} \
         --keep-weekly {{ cr_synology_backup_retention.keep_weekly }} \
         --keep-monthly {{ cr_synology_backup_retention.keep_monthly }} \

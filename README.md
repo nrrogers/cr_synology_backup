@@ -45,6 +45,7 @@ See `defaults/main.yml` for the full list. Notable ones:
 | Variable | Default |
 | --- | --- |
 | `cr_synology_backup_base_dir` | `/volume1/docker/scripts` |
+| `cr_synology_backup_restic_binary` | `/usr/local/bin/restic` |
 | `cr_synology_backup_ssh_user` | `svc_restic` |
 | `cr_synology_backup_healthcheck_base_url` | `https://hc-ping.com` |
 | `cr_synology_backup_retention.keep_daily` | `7` |
