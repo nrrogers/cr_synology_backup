@@ -1,0 +1,12 @@
+# Force LF line endings for all text files in this repo, regardless of the
+# platform git is being used on. The wrapper script template targets a Linux
+# Synology, and CRLF endings break bash line continuations (\<CR><LF> is not
+# a line continuation).
+
+* text=auto eol=lf
+*.j2 text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+.gitattributes export-ignore

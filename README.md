@@ -4,7 +4,7 @@ Ansible role to deploy a restic-over-SFTP backup wrapper script to a Synology NA
 
 The wrapper script handles:
 
-- healthcheck.io start / success / failure pings (with log body posted on success and failure)
+- healthcheck.io start / success / failure pings, with short status messages in the body (`Backup successful for location: proteus`, etc.) — matches the autorestic convention used by the Docker fleet
 - Local log capture and rotation (default: 30-day retention)
 - restic retention via `restic forget --prune`
 - `trap ERR` so any failure mid-script fires the failure ping
@@ -17,12 +17,12 @@ Designed to live inside an encrypted DSM shared folder (e.g. `/volume1/docker/sc
 - Deploys the SSH private key (from a vaulted variable)
 - Deploys the restic repo password file (from a vaulted variable)
 - Ensures the base directory and log directory exist with safe permissions
-- Asserts that `restic` is installed on the target before doing anything else
+- Asserts that `restic` is installed at the configured path before doing anything else
 
 ## What this role does NOT do
 
 - **Install restic.** DSM doesn't expose Package Center via a stable Ansible-friendly API. Install restic manually from SynoCommunity, or pre-bake it.
-- **Create the DSM Task Scheduler job.** Same reason. Configure the scheduled task in the DSM UI (root user, daily off-hours, command = `{{ cr_synology_backup_script_path }}` rendered to its absolute path).
+- **Create the DSM Task Scheduler job.** Same reason. Configure the scheduled task in the DSM UI (root user, daily off-hours, command = the absolute path to the rendered wrapper script).
 - **Run `restic init`.** This is a one-time manual step per host, before the first scheduled run.
 
 ## Required variables
@@ -35,7 +35,7 @@ These have no defaults and must be set per host (typically in `host_vars/<host>.
 | `cr_synology_backup_ssh_target_host` | IP or hostname for the SFTP connection |
 | `cr_synology_backup_repo_password` | restic repo password — **vault me** |
 | `cr_synology_backup_ssh_private_key` | SSH private key contents — **vault me** |
-| `cr_synology_backup_healthcheck_uuid` | healthcheck.io UUID for this host's endpoint — **vault me** |
+| `cr_synology_backup_healthcheck_url` | Full healthcheck.io ping URL incl. UUID — **vault me** |
 | `cr_synology_backup_paths` | List of absolute paths to back up |
 
 ## Variables with defaults
@@ -47,7 +47,7 @@ See `defaults/main.yml` for the full list. Notable ones:
 | `cr_synology_backup_base_dir` | `/volume1/docker/scripts` |
 | `cr_synology_backup_restic_binary` | `/usr/local/bin/restic` |
 | `cr_synology_backup_ssh_user` | `svc_restic` |
-| `cr_synology_backup_healthcheck_base_url` | `https://hc-ping.com` |
+| `cr_synology_backup_location_name` | `{{ inventory_hostname }}` |
 | `cr_synology_backup_retention.keep_daily` | `7` |
 | `cr_synology_backup_retention.keep_weekly` | `4` |
 | `cr_synology_backup_retention.keep_monthly` | `12` |
@@ -62,7 +62,7 @@ cr_synology_backup_repo_url: "sftp:svc_restic@192.168.77.89:/mnt/harvest/backups
 cr_synology_backup_ssh_target_host: "192.168.77.89"
 cr_synology_backup_repo_password: "{{ vault_proteus_restic_repo_password }}"
 cr_synology_backup_ssh_private_key: "{{ vault_restic_backup_id_ed25519_private }}"
-cr_synology_backup_healthcheck_uuid: "{{ vault_proteus_restic_healthcheck_uuid }}"
+cr_synology_backup_healthcheck_url: "{{ vault_proteus_restic_healthcheck_url }}"
 cr_synology_backup_paths:
   - /volume1/photo
   - /volume1/video

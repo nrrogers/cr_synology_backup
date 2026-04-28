@@ -13,8 +13,8 @@ set -euo pipefail
 # ============================================================================
 
 # --- healthcheck.io ---
-HC_UUID="{{ cr_synology_backup_healthcheck_uuid }}"
-HC_BASE="{{ cr_synology_backup_healthcheck_base_url }}/${HC_UUID}"
+HC_URL="{{ cr_synology_backup_healthcheck_url }}"
+LOCATION="{{ cr_synology_backup_location_name }}"
 
 # --- restic ---
 export RESTIC_REPOSITORY="{{ cr_synology_backup_repo_url }}"
@@ -28,17 +28,23 @@ LOG="${LOG_DIR}/restic-backup-$(date +%Y%m%d-%H%M%S).log"
 mkdir -p "$LOG_DIR"
 
 # --- hooks ---
+# Failure: post a short status message to /fail. Mirrors the autorestic
+# convention ("Backup failed for location: <name>"). Full backup output
+# lives in the log file at $LOG for forensics.
 ping_failure() {
-    curl -fsS -m 10 --retry 3 --data-binary @"$LOG" "${HC_BASE}/fail" >/dev/null 2>&1 || true
+    curl -fsS -m 10 --retry 5 -X POST -H "Content-Type: text/plain" \
+        --data "Backup failed for location: ${LOCATION}" \
+        "${HC_URL}/fail" >/dev/null 2>&1 || true
 }
 trap ping_failure ERR
 
-curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
+# Start ping
+curl -fsS -m 10 --retry 5 "${HC_URL}/start" >/dev/null 2>&1 || true
 
 # --- backup ---
 {
     echo "=== restic backup started $(date -Iseconds) ==="
-    echo "host: $(hostname), repo: ${RESTIC_REPOSITORY}"
+    echo "host: $(hostname), repo: ${RESTIC_REPOSITORY}, location: ${LOCATION}"
 
     {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" backup \
 {%- for path in cr_synology_backup_paths %}
@@ -60,7 +66,11 @@ curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
     echo "=== restic backup completed $(date -Iseconds) ==="
 } >> "$LOG" 2>&1
 
-curl -fsS -m 10 --retry 3 --data-binary @"$LOG" "${HC_BASE}" >/dev/null 2>&1 || true
+# Success: post a short status message to the base URL. Mirrors autorestic
+# convention. Full backup output stays in the local log file.
+curl -fsS -m 10 --retry 5 -X POST -H "Content-Type: text/plain" \
+    --data "Backup successful for location: ${LOCATION}" \
+    "${HC_URL}" >/dev/null 2>&1 || true
 
 # --- local log retention (repo retention is handled by restic forget above) ---
 find "$LOG_DIR" -name 'restic-backup-*.log' -mtime +{{ cr_synology_backup_log_retention_days }} -delete 2>/dev/null || true

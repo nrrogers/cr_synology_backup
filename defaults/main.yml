@@ -7,7 +7,7 @@
 #   cr_synology_backup_ssh_target_host    - IP or hostname for the SFTP connection
 #   cr_synology_backup_repo_password      - restic repo password (vault me)
 #   cr_synology_backup_ssh_private_key    - SSH private key contents (vault me)
-#   cr_synology_backup_healthcheck_uuid   - healthcheck.io UUID (vault me)
+#   cr_synology_backup_healthcheck_url    - Full healthcheck.io ping URL (vault me)
 #   cr_synology_backup_paths              - List of absolute paths to back up
 #
 
@@ -29,7 +29,15 @@ cr_synology_backup_restic_binary: /usr/local/bin/restic
 cr_synology_backup_ssh_user: svc_restic
 
 # --- healthcheck.io ---
-cr_synology_backup_healthcheck_base_url: "https://hc-ping.com"
+# `cr_synology_backup_healthcheck_url` is required (no default) and should be
+# the full ping URL including the UUID, e.g. "https://hc-ping.com/abc-123-...".
+# Stored in vault. Mirrors how autorestic-managed Docker hosts store theirs.
+#
+# `location_name` is a short identifier used in success/failure ping bodies:
+#   "Backup successful for location: proteus"
+# Defaults to the inventory hostname; override per-host if you want a different
+# label in the healthchecks dashboard.
+cr_synology_backup_location_name: "{{ inventory_hostname }}"
 
 # --- restic retention (passed to `restic forget --prune`) ---
 cr_synology_backup_retention:
