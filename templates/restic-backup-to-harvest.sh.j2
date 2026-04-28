@@ -57,6 +57,7 @@ curl -fsS -m 10 --retry 5 "${HC_URL}/start" >/dev/null 2>&1 || true
     echo "=== restic forget + prune started $(date -Iseconds) ==="
 
     {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" forget \
+        --keep-last {{ cr_synology_backup_retention.keep_last }} \
         --keep-daily {{ cr_synology_backup_retention.keep_daily }} \
         --keep-weekly {{ cr_synology_backup_retention.keep_weekly }} \
         --keep-monthly {{ cr_synology_backup_retention.keep_monthly }} \
