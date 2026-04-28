@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: cr_synology_backup
+  author: nrrogers
+  description: >-
+    Deploy a restic-over-SFTP backup wrapper to a Synology NAS targeting harvest
+    (TrueNAS). Handles healthcheck.io hooks, log capture, and retention.
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Synology
+      versions:
+        - DSM7
+dependencies: []
