@@ -41,6 +41,7 @@ cr_synology_backup_location_name: "{{ inventory_hostname }}"
 
 # --- restic retention (passed to `restic forget --prune`) ---
 cr_synology_backup_retention:
+  keep_last: 2
   keep_daily: 7
   keep_weekly: 4
   keep_monthly: 12

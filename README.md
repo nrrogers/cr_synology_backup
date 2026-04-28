@@ -48,6 +48,7 @@ See `defaults/main.yml` for the full list. Notable ones:
 | `cr_synology_backup_restic_binary` | `/usr/local/bin/restic` |
 | `cr_synology_backup_ssh_user` | `svc_restic` |
 | `cr_synology_backup_location_name` | `{{ inventory_hostname }}` |
+| `cr_synology_backup_retention.keep_last` | `2` |
 | `cr_synology_backup_retention.keep_daily` | `7` |
 | `cr_synology_backup_retention.keep_weekly` | `4` |
 | `cr_synology_backup_retention.keep_monthly` | `12` |
