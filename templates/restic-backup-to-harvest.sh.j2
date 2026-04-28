@@ -1,0 +1,66 @@
+#!/bin/bash
+set -euo pipefail
+
+# Managed by Ansible — do not edit by hand.
+# Source: {{ ansible_managed }}
+
+# ============================================================================
+# restic backup: {{ inventory_hostname }} → harvest
+# Runs from DSM Task Scheduler as root.
+# Lives inside an encrypted DSM shared folder when so configured — backup
+# will not run after a reboot until the folder is manually unlocked. Missed
+# runs are caught by healthcheck.io's missing-run alert.
+# ============================================================================
+
+# --- healthcheck.io ---
+HC_UUID="{{ restic_synology_healthcheck_uuid }}"
+HC_BASE="{{ restic_synology_healthcheck_base_url }}/${HC_UUID}"
+
+# --- restic ---
+export RESTIC_REPOSITORY="{{ restic_synology_repo_url }}"
+export RESTIC_PASSWORD_FILE="{{ restic_synology_repo_password_file }}"
+
+SFTP_CMD="ssh -i {{ restic_synology_ssh_key_path }} -o StrictHostKeyChecking=accept-new {{ restic_synology_ssh_user }}@{{ restic_synology_ssh_target_host }} -s sftp"
+
+# --- logging ---
+LOG_DIR="{{ restic_synology_log_dir }}"
+LOG="${LOG_DIR}/restic-backup-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p "$LOG_DIR"
+
+# --- hooks ---
+ping_failure() {
+    curl -fsS -m 10 --retry 3 --data-binary @"$LOG" "${HC_BASE}/fail" >/dev/null 2>&1 || true
+}
+trap ping_failure ERR
+
+curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
+
+# --- backup ---
+{
+    echo "=== restic backup started $(date -Iseconds) ==="
+    echo "host: $(hostname), repo: ${RESTIC_REPOSITORY}"
+
+    restic -o sftp.command="$SFTP_CMD" backup \
+{%- for path in restic_synology_backup_paths %}
+        {{ path | quote }}{% if not loop.last or (restic_synology_excludes | default([]) | length > 0) %} \{% endif %}
+{%- endfor %}
+{%- for excl in restic_synology_excludes | default([]) %}
+        --exclude={{ excl | quote }}{% if not loop.last %} \{% endif %}
+{%- endfor %}
+
+    echo "=== restic forget + prune started $(date -Iseconds) ==="
+
+    restic -o sftp.command="$SFTP_CMD" forget \
+        --keep-daily {{ restic_synology_retention.keep_daily }} \
+        --keep-weekly {{ restic_synology_retention.keep_weekly }} \
+        --keep-monthly {{ restic_synology_retention.keep_monthly }} \
+        --keep-yearly {{ restic_synology_retention.keep_yearly }} \
+        --prune
+
+    echo "=== restic backup completed $(date -Iseconds) ==="
+} >> "$LOG" 2>&1
+
+curl -fsS -m 10 --retry 3 --data-binary @"$LOG" "${HC_BASE}" >/dev/null 2>&1 || true
+
+# --- local log retention (repo retention is handled by restic forget above) ---
+find "$LOG_DIR" -name 'restic-backup-*.log' -mtime +{{ restic_synology_log_retention_days }} -delete 2>/dev/null || true
