@@ -13,17 +13,17 @@ set -euo pipefail
 # ============================================================================
 
 # --- healthcheck.io ---
-HC_UUID="{{ restic_synology_healthcheck_uuid }}"
-HC_BASE="{{ restic_synology_healthcheck_base_url }}/${HC_UUID}"
+HC_UUID="{{ cr_synology_backup_healthcheck_uuid }}"
+HC_BASE="{{ cr_synology_backup_healthcheck_base_url }}/${HC_UUID}"
 
 # --- restic ---
-export RESTIC_REPOSITORY="{{ restic_synology_repo_url }}"
-export RESTIC_PASSWORD_FILE="{{ restic_synology_repo_password_file }}"
+export RESTIC_REPOSITORY="{{ cr_synology_backup_repo_url }}"
+export RESTIC_PASSWORD_FILE="{{ cr_synology_backup_repo_password_file }}"
 
-SFTP_CMD="ssh -i {{ restic_synology_ssh_key_path }} -o StrictHostKeyChecking=accept-new {{ restic_synology_ssh_user }}@{{ restic_synology_ssh_target_host }} -s sftp"
+SFTP_CMD="ssh -i {{ cr_synology_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new {{ cr_synology_backup_ssh_user }}@{{ cr_synology_backup_ssh_target_host }} -s sftp"
 
 # --- logging ---
-LOG_DIR="{{ restic_synology_log_dir }}"
+LOG_DIR="{{ cr_synology_backup_log_dir }}"
 LOG="${LOG_DIR}/restic-backup-$(date +%Y%m%d-%H%M%S).log"
 mkdir -p "$LOG_DIR"
 
@@ -41,20 +41,20 @@ curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
     echo "host: $(hostname), repo: ${RESTIC_REPOSITORY}"
 
     restic -o sftp.command="$SFTP_CMD" backup \
-{%- for path in restic_synology_backup_paths %}
-        {{ path | quote }}{% if not loop.last or (restic_synology_excludes | default([]) | length > 0) %} \{% endif %}
+{%- for path in cr_synology_backup_paths %}
+        {{ path | quote }}{% if not loop.last or (cr_synology_backup_excludes | default([]) | length > 0) %} \{% endif %}
 {%- endfor %}
-{%- for excl in restic_synology_excludes | default([]) %}
+{%- for excl in cr_synology_backup_excludes | default([]) %}
         --exclude={{ excl | quote }}{% if not loop.last %} \{% endif %}
 {%- endfor %}
 
     echo "=== restic forget + prune started $(date -Iseconds) ==="
 
     restic -o sftp.command="$SFTP_CMD" forget \
-        --keep-daily {{ restic_synology_retention.keep_daily }} \
-        --keep-weekly {{ restic_synology_retention.keep_weekly }} \
-        --keep-monthly {{ restic_synology_retention.keep_monthly }} \
-        --keep-yearly {{ restic_synology_retention.keep_yearly }} \
+        --keep-daily {{ cr_synology_backup_retention.keep_daily }} \
+        --keep-weekly {{ cr_synology_backup_retention.keep_weekly }} \
+        --keep-monthly {{ cr_synology_backup_retention.keep_monthly }} \
+        --keep-yearly {{ cr_synology_backup_retention.keep_yearly }} \
         --prune
 
     echo "=== restic backup completed $(date -Iseconds) ==="
@@ -63,4 +63,4 @@ curl -fsS -m 10 --retry 3 "${HC_BASE}/start" >/dev/null 2>&1 || true
 curl -fsS -m 10 --retry 3 --data-binary @"$LOG" "${HC_BASE}" >/dev/null 2>&1 || true
 
 # --- local log retention (repo retention is handled by restic forget above) ---
-find "$LOG_DIR" -name 'restic-backup-*.log' -mtime +{{ restic_synology_log_retention_days }} -delete 2>/dev/null || true
+find "$LOG_DIR" -name 'restic-backup-*.log' -mtime +{{ cr_synology_backup_log_retention_days }} -delete 2>/dev/null || true

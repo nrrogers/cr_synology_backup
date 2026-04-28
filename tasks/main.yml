@@ -8,7 +8,7 @@
 
 - name: Ensure base directory exists
   ansible.builtin.file:
-    path: "{{ restic_synology_base_dir }}"
+    path: "{{ cr_synology_backup_base_dir }}"
     state: directory
     owner: root
     group: root
@@ -16,7 +16,7 @@
 
 - name: Ensure log directory exists
   ansible.builtin.file:
-    path: "{{ restic_synology_log_dir }}"
+    path: "{{ cr_synology_backup_log_dir }}"
     state: directory
     owner: root
     group: root
@@ -24,8 +24,8 @@
 
 - name: Deploy SSH private key
   ansible.builtin.copy:
-    content: "{{ restic_synology_ssh_private_key }}"
-    dest: "{{ restic_synology_ssh_key_path }}"
+    content: "{{ cr_synology_backup_ssh_private_key }}"
+    dest: "{{ cr_synology_backup_ssh_key_path }}"
     owner: root
     group: root
     mode: "0600"
@@ -33,8 +33,8 @@
 
 - name: Deploy restic repository password file
   ansible.builtin.copy:
-    content: "{{ restic_synology_repo_password }}"
-    dest: "{{ restic_synology_repo_password_file }}"
+    content: "{{ cr_synology_backup_repo_password }}"
+    dest: "{{ cr_synology_backup_repo_password_file }}"
     owner: root
     group: root
     mode: "0600"
@@ -43,7 +43,7 @@
 - name: Render restic backup wrapper script
   ansible.builtin.template:
     src: restic-backup-to-harvest.sh.j2
-    dest: "{{ restic_synology_script_path }}"
+    dest: "{{ cr_synology_backup_script_path }}"
     owner: root
     group: root
     mode: "0700"

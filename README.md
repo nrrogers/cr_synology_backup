@@ -22,7 +22,7 @@ Designed to live inside an encrypted DSM shared folder (e.g. `/volume1/docker/sc
 ## What this role does NOT do
 
 - **Install restic.** DSM doesn't expose Package Center via a stable Ansible-friendly API. Install restic manually from SynoCommunity, or pre-bake it.
-- **Create the DSM Task Scheduler job.** Same reason. Configure the scheduled task in the DSM UI (root user, daily off-hours, command = `{{ restic_synology_script_path }}` rendered to its absolute path).
+- **Create the DSM Task Scheduler job.** Same reason. Configure the scheduled task in the DSM UI (root user, daily off-hours, command = `{{ cr_synology_backup_script_path }}` rendered to its absolute path).
 - **Run `restic init`.** This is a one-time manual step per host, before the first scheduled run.
 
 ## Required variables
@@ -31,12 +31,12 @@ These have no defaults and must be set per host (typically in `host_vars/<host>.
 
 | Variable | Purpose |
 | --- | --- |
-| `restic_synology_repo_url` | Full restic SFTP URL including the per-host subdir |
-| `restic_synology_ssh_target_host` | IP or hostname for the SFTP connection |
-| `restic_synology_repo_password` | restic repo password — **vault me** |
-| `restic_synology_ssh_private_key` | SSH private key contents — **vault me** |
-| `restic_synology_healthcheck_uuid` | healthcheck.io UUID for this host's endpoint — **vault me** |
-| `restic_synology_backup_paths` | List of absolute paths to back up |
+| `cr_synology_backup_repo_url` | Full restic SFTP URL including the per-host subdir |
+| `cr_synology_backup_ssh_target_host` | IP or hostname for the SFTP connection |
+| `cr_synology_backup_repo_password` | restic repo password — **vault me** |
+| `cr_synology_backup_ssh_private_key` | SSH private key contents — **vault me** |
+| `cr_synology_backup_healthcheck_uuid` | healthcheck.io UUID for this host's endpoint — **vault me** |
+| `cr_synology_backup_paths` | List of absolute paths to back up |
 
 ## Variables with defaults
 
@@ -44,25 +44,25 @@ See `defaults/main.yml` for the full list. Notable ones:
 
 | Variable | Default |
 | --- | --- |
-| `restic_synology_base_dir` | `/volume1/docker/scripts` |
-| `restic_synology_ssh_user` | `svc_restic` |
-| `restic_synology_healthcheck_base_url` | `https://hc-ping.com` |
-| `restic_synology_retention.keep_daily` | `7` |
-| `restic_synology_retention.keep_weekly` | `4` |
-| `restic_synology_retention.keep_monthly` | `12` |
-| `restic_synology_retention.keep_yearly` | `2` |
-| `restic_synology_log_retention_days` | `30` |
-| `restic_synology_excludes` | DSM cruft + the password file |
+| `cr_synology_backup_base_dir` | `/volume1/docker/scripts` |
+| `cr_synology_backup_ssh_user` | `svc_restic` |
+| `cr_synology_backup_healthcheck_base_url` | `https://hc-ping.com` |
+| `cr_synology_backup_retention.keep_daily` | `7` |
+| `cr_synology_backup_retention.keep_weekly` | `4` |
+| `cr_synology_backup_retention.keep_monthly` | `12` |
+| `cr_synology_backup_retention.keep_yearly` | `2` |
+| `cr_synology_backup_log_retention_days` | `30` |
+| `cr_synology_backup_excludes` | DSM cruft + the password file |
 
 ## Example host_vars
 
 ```yaml
-restic_synology_repo_url: "sftp:svc_restic@192.168.77.89:/mnt/harvest/backups/backups_restic/proteus"
-restic_synology_ssh_target_host: "192.168.77.89"
-restic_synology_repo_password: "{{ vault_proteus_restic_repo_password }}"
-restic_synology_ssh_private_key: "{{ vault_restic_backup_id_ed25519_private }}"
-restic_synology_healthcheck_uuid: "{{ vault_proteus_restic_healthcheck_uuid }}"
-restic_synology_backup_paths:
+cr_synology_backup_repo_url: "sftp:svc_restic@192.168.77.89:/mnt/harvest/backups/backups_restic/proteus"
+cr_synology_backup_ssh_target_host: "192.168.77.89"
+cr_synology_backup_repo_password: "{{ vault_proteus_restic_repo_password }}"
+cr_synology_backup_ssh_private_key: "{{ vault_restic_backup_id_ed25519_private }}"
+cr_synology_backup_healthcheck_uuid: "{{ vault_proteus_restic_healthcheck_uuid }}"
+cr_synology_backup_paths:
   - /volume1/photo
   - /volume1/video
   - /volume1/music
