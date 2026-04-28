@@ -1,0 +1,49 @@
+---
+- name: Verify restic is installed
+  ansible.builtin.command: restic version
+  register: _restic_version
+  changed_when: false
+  check_mode: false
+  failed_when: _restic_version.rc != 0
+
+- name: Ensure base directory exists
+  ansible.builtin.file:
+    path: "{{ restic_synology_base_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: "{{ restic_synology_log_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Deploy SSH private key
+  ansible.builtin.copy:
+    content: "{{ restic_synology_ssh_private_key }}"
+    dest: "{{ restic_synology_ssh_key_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy restic repository password file
+  ansible.builtin.copy:
+    content: "{{ restic_synology_repo_password }}"
+    dest: "{{ restic_synology_repo_password_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Render restic backup wrapper script
+  ansible.builtin.template:
+    src: restic-backup-to-harvest.sh.j2
+    dest: "{{ restic_synology_script_path }}"
+    owner: root
+    group: root
+    mode: "0700"
