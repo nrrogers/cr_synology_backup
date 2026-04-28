@@ -1,0 +1,43 @@
+---
+# cr_synology_backup defaults.
+#
+# Required variables (no default — must be set per host, typically in host_vars):
+#
+#   restic_synology_repo_url           - Full restic SFTP URL including per-host subdir
+#   restic_synology_ssh_target_host    - IP or hostname for the SFTP connection
+#   restic_synology_repo_password      - restic repo password (vault me)
+#   restic_synology_ssh_private_key    - SSH private key contents (vault me)
+#   restic_synology_healthcheck_uuid   - healthcheck.io UUID (vault me)
+#   restic_synology_backup_paths       - List of absolute paths to back up
+#
+
+# --- file locations ---
+restic_synology_base_dir: /volume1/docker/scripts
+restic_synology_script_path: "{{ restic_synology_base_dir }}/restic-backup-to-harvest.sh"
+restic_synology_ssh_key_path: "{{ restic_synology_base_dir }}/restic_backup_id_ed25519"
+restic_synology_repo_password_file: "{{ restic_synology_base_dir }}/.restic-password-{{ inventory_hostname }}"
+restic_synology_log_dir: "{{ restic_synology_base_dir }}/logs"
+
+# --- ssh ---
+restic_synology_ssh_user: svc_restic
+
+# --- healthcheck.io ---
+restic_synology_healthcheck_base_url: "https://hc-ping.com"
+
+# --- restic retention (passed to `restic forget --prune`) ---
+restic_synology_retention:
+  keep_daily: 7
+  keep_weekly: 4
+  keep_monthly: 12
+  keep_yearly: 2
+
+# --- exclude patterns (DSM cruft + the password file by default) ---
+restic_synology_excludes:
+  - "**/.DS_Store"
+  - "**/@eaDir"
+  - "**/#recycle"
+  - "**/Thumbs.db"
+  - "{{ restic_synology_repo_password_file }}"
+
+# --- local log retention (days) ---
+restic_synology_log_retention_days: 30
