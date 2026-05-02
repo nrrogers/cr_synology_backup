@@ -18,6 +18,13 @@ cr_synology_backup_ssh_key_path: "{{ cr_synology_backup_base_dir }}/restic_backu
 cr_synology_backup_repo_password_file: "{{ cr_synology_backup_base_dir }}/.restic-password-{{ inventory_hostname }}"
 cr_synology_backup_log_dir: "{{ cr_synology_backup_base_dir }}/logs"
 
+# --- cache and tmp ---
+# DSM's rootfs (/dev/md0) is ~2.3 GB on Synology and will fill against a
+# multi-TB source if restic's default $HOME-based cache or $TMPDIR-based
+# pack staging are used. Both must live on /volume1.
+cr_synology_backup_cache_dir: "{{ cr_synology_backup_base_dir }}/restic-cache"
+cr_synology_backup_tmp_dir: "{{ cr_synology_backup_base_dir }}/restic-tmp"
+
 # --- restic binary ---
 # DSM's non-interactive shell PATH does not include /usr/local/bin where
 # SynoCommunity symlinks restic, so the wrapper and the preflight check

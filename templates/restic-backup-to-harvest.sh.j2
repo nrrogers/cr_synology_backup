@@ -19,6 +19,10 @@ LOCATION="{{ cr_synology_backup_location_name }}"
 # --- restic ---
 export RESTIC_REPOSITORY="{{ cr_synology_backup_repo_url }}"
 export RESTIC_PASSWORD_FILE="{{ cr_synology_backup_repo_password_file }}"
+# Cache and tmp must live on /volume1 — DSM's rootfs is too small for a
+# multi-TB source's index or staged packs (see role defaults).
+export RESTIC_CACHE_DIR="{{ cr_synology_backup_cache_dir }}"
+export TMPDIR="{{ cr_synology_backup_tmp_dir }}"
 
 SFTP_CMD="ssh -i {{ cr_synology_backup_ssh_key_path }} -o StrictHostKeyChecking=accept-new {{ cr_synology_backup_ssh_user }}@{{ cr_synology_backup_ssh_target_host }} -s sftp"
 
