@@ -22,6 +22,31 @@
     group: root
     mode: "0750"
 
+- name: Ensure restic cache directory exists on /volume1
+  ansible.builtin.file:
+    path: "{{ cr_synology_backup_cache_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Ensure restic tmp directory exists on /volume1
+  ansible.builtin.file:
+    path: "{{ cr_synology_backup_tmp_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Remove orphaned restic cache on rootfs
+  # DSM's rootfs is ~2.3 GB; a partial cache from a pre-RESTIC_CACHE_DIR
+  # run will have pinned it at 100% and must be cleared before the wrapper
+  # can succeed. Safe to run unconditionally — restic will rebuild under
+  # RESTIC_CACHE_DIR on the next backup.
+  ansible.builtin.file:
+    path: /root/.cache/restic
+    state: absent
+
 - name: Deploy SSH private key
   ansible.builtin.copy:
     content: "{{ cr_synology_backup_ssh_private_key }}"
