@@ -46,17 +46,33 @@ trap ping_failure ERR
 curl -fsS -m 10 --retry 5 "${HC_URL}/start" >/dev/null 2>&1 || true
 
 # --- backup ---
+# restic exit codes: 0 = clean; 3 = completed but one or more source files
+# could not be read (e.g. a live Time Machine band or the Home Assistant DB
+# rotating mid-run). Exit 3 still writes a valid snapshot, so treat it as
+# success and go on to forget/prune. Any other non-zero code is re-raised so
+# `set -e` + the ERR trap still ping /fail on a genuine failure. The `|| ...`
+# idiom is deliberate: it stops both errexit and the ERR trap from firing on
+# the captured exit code so exit 3 does not raise a false failure alert.
 {
     echo "=== restic backup started $(date -Iseconds) ==="
     echo "host: $(hostname), repo: ${RESTIC_REPOSITORY}, location: ${LOCATION}"
 
+    backup_rc=0
     {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" backup \
 {%- for path in cr_synology_backup_paths %}
-        {{ path | quote }}{% if not loop.last or (cr_synology_backup_excludes | default([]) | length > 0) %} \{% endif %}
+        {{ path | quote }} \
 {%- endfor %}
 {%- for excl in cr_synology_backup_excludes | default([]) %}
-        --exclude={{ excl | quote }}{% if not loop.last %} \{% endif %}
+        --exclude={{ excl | quote }} \
 {%- endfor %}
+        || backup_rc=$?
+
+    if [ "$backup_rc" -eq 3 ]; then
+        echo "WARNING: restic backup exit 3 — some source files could not be read; snapshot is still valid, continuing"
+    elif [ "$backup_rc" -ne 0 ]; then
+        echo "ERROR: restic backup failed with exit code ${backup_rc}"
+        ( exit "$backup_rc" )
+    fi
 
     echo "=== restic forget + prune started $(date -Iseconds) ==="
 
