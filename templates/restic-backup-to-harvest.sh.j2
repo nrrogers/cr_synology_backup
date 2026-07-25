@@ -55,18 +55,27 @@ curl -fsS -m 10 --retry 5 "${HC_URL}/start" >/dev/null 2>&1 || true
     # (open/locked DSM files, permission blips) shouldn't fail the whole backup
     # and trip the healthcheck /fail ping — the snapshot is still written.
     #
+    # Build the argument list as bash arrays, NOT a backslash-continued command:
+    # Ansible renders templates with trim_blocks=True, which strips the newlines
+    # after Jinja loop tags and collapses a backslash-continued command onto one
+    # physical line — that previously swallowed the `then` keyword and produced a
+    # syntax error. Arrays tolerate any inter-element whitespace, and `; then`
+    # keeps the keyword on the command line regardless of collapse.
+    backup_paths=(
+{% for path in cr_synology_backup_paths %}
+        {{ path | quote }}
+{% endfor %}
+    )
+    backup_excludes=(
+{% for excl in cr_synology_backup_excludes | default([]) %}
+        --exclude={{ excl | quote }}
+{% endfor %}
+    )
     # The backup runs as an `if` condition so its non-zero exit trips neither
-    # set -e nor the ERR trap; we then decide explicitly. rc 3 is tolerated and
-    # we fall through to forget/prune; any other non-zero code pings /fail and
-    # exits, matching the original fail-fast behaviour (rc 0/3 → success ping).
-    if {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" backup \
-{%- for path in cr_synology_backup_paths %}
-        {{ path | quote }}{% if not loop.last or (cr_synology_backup_excludes | default([]) | length > 0) %} \{% endif %}
-{%- endfor %}
-{%- for excl in cr_synology_backup_excludes | default([]) %}
-        --exclude={{ excl | quote }}{% if not loop.last %} \{% endif %}
-{%- endfor %}
-    then
+    # set -e nor the ERR trap; we then decide explicitly (rc 0/3 → success ping).
+    # ${arr[@]+"${arr[@]}"} expands to nothing when empty, avoiding a set -u
+    # "unbound variable" error on hosts with no excludes.
+    if {{ cr_synology_backup_restic_binary }} -o sftp.command="$SFTP_CMD" backup "${backup_paths[@]}" ${backup_excludes[@]+"${backup_excludes[@]}"}; then
         backup_rc=0
     else
         backup_rc=$?
